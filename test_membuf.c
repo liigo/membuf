@@ -77,12 +77,13 @@ static void append() {
 static void exchange() {
 	membuf_t buf1, buf2;
 	unsigned int longlen = MEMBUF_INLINE_CAPACITY + 16;
-	char tmp[longlen+1];
 	const char* str1 = "12345678";
 	const char* str2 = "abcdefg";
-	const char* longstr = tmp;
+	const char* longstr;
+	char* tmp = (char*) malloc(longlen+1);
 	memset(tmp, 'A', longlen);
 	tmp[longlen] = '\0';
+	longstr = tmp;
 
 	//both use inline buffer
 	membuf_init(&buf1, 0);
@@ -130,6 +131,8 @@ static void exchange() {
 	assert_equal_int(buf2.size, longlen + 3, "exchange3, check size");
 	membuf_uninit(&buf1);
 	membuf_uninit(&buf2);
+
+	free(tmp);
 }
 
 int main() {

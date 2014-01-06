@@ -34,26 +34,34 @@ static unsigned int membuf_is_empty(membuf_t* buf) { return buf->size > 0; }
 void membuf_ensure_new_size(membuf_t* buf, unsigned int new_size);
 void membuf_exchange(membuf_t* buf1, membuf_t* buf2);
 
-static inline unsigned int membuf_append_byte(membuf_t* buf, unsigned char b) {
+
+#if defined(_MSC_VER)
+	#define MEMBUF_INLINE _inline
+#else
+	#define MEMBUF_INLINE static inline
+#endif
+
+MEMBUF_INLINE unsigned int membuf_append_byte(membuf_t* buf, unsigned char b) {
 	return membuf_append_data(buf, &b, sizeof(b));
 }
-static inline unsigned int membuf_append_int(membuf_t* buf, int i) {
+MEMBUF_INLINE unsigned int membuf_append_int(membuf_t* buf, int i) {
 	return membuf_append_data(buf, &i, sizeof(i));
 }
-static inline unsigned int membuf_append_uint(membuf_t* buf, unsigned int ui) {
+MEMBUF_INLINE unsigned int membuf_append_uint(membuf_t* buf, unsigned int ui) {
 	return membuf_append_data(buf, &ui, sizeof(ui));
 }
-static inline unsigned int membuf_append_short(membuf_t* buf, short s) {
+MEMBUF_INLINE unsigned int membuf_append_short(membuf_t* buf, short s) {
 	return membuf_append_data(buf, &s, sizeof(s));
 }
-static inline unsigned int membuf_append_ushort(membuf_t* buf, short us) {
+MEMBUF_INLINE unsigned int membuf_append_ushort(membuf_t* buf, short us) {
 	return membuf_append_data(buf, &us, sizeof(us));
 }
-static inline unsigned int membuf_append_float(membuf_t* buf, float f) {
+MEMBUF_INLINE unsigned int membuf_append_float(membuf_t* buf, float f) {
 	return membuf_append_data(buf, &f, sizeof(f));
 }
-static inline unsigned int membuf_append_double(membuf_t* buf, double d) {
+MEMBUF_INLINE unsigned int membuf_append_double(membuf_t* buf, double d) {
 	return membuf_append_data(buf, &d, sizeof(d));
 }
+
 
 #endif //__MEMBUF_H__

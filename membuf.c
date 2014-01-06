@@ -69,6 +69,7 @@ unsigned int membuf_append_text(membuf_t* buf, const char* str, unsigned int len
 }
 
 void membuf_exchange(membuf_t* buf1, membuf_t* buf2) {
+	unsigned int tmp_size, tmp_buffer_size;
 	assert(buf1 && buf2);
 
 	//exchange data
@@ -104,7 +105,8 @@ void membuf_exchange(membuf_t* buf1, membuf_t* buf2) {
 	}
 
 	//exchange size and buffer_size
-	unsigned int tmp_size = buf1->size, tmp_buffer_size = buf1->buffer_size;
+	tmp_size = buf1->size;
+	tmp_buffer_size = buf1->buffer_size;
 	buf1->size = buf2->size; buf2->size = tmp_size;
 	buf1->buffer_size = buf2->buffer_size; buf2->buffer_size = tmp_buffer_size;
 }
