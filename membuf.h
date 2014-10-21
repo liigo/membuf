@@ -1,42 +1,44 @@
 #ifndef __MEMBUF_H__
 #define __MEMBUF_H__
 
-// membuf is an auto-enlarging continuous in-memory buffer.
-// it also has inline-buffer to use stack memory efficiently.
-// by liigo, 2013-7-5.
+// `membuf` is an auto-growable continuous in-memory buffer.
+// It also support "local buffer" to use stack memory efficiently.
+// by liigo, 2013-7-5, 2014-8-16, 2014-10-21.
 // https://github.com/liigo/membuf
 
 #include <stdlib.h>
-
-#ifndef MEMBUF_INLINE_CAPACITY
-	#define MEMBUF_INLINE_CAPACITY  512
-#endif
 
 typedef struct {
 	unsigned char* data;
 	unsigned int   size;
 	unsigned int   buffer_size;
-	unsigned char  inline_buffer[MEMBUF_INLINE_CAPACITY];
+	unsigned char  uses_local_buffer;  // local buffer, e.g. on stack
 } membuf_t;
 
+#ifndef MEMBUF_INIT_LOCAL
+	#define MEMBUF_INIT_LOCAL(buf,n) membuf_t buf; unsigned char buf##n[n]; membuf_init_local(&buf, &buf##n, n);
+#endif
+
 void membuf_init(membuf_t* buf, unsigned int initial_buffer_size);
+void membuf_init_local(membuf_t* buf, void* local_buffer, unsigned int local_buffer_size);
 void membuf_uninit(membuf_t* buf);
 
 unsigned int membuf_append_data(membuf_t* buf, void* data, unsigned int size);
 unsigned int membuf_append_zeros(membuf_t* buf, unsigned int size);
 unsigned int membuf_append_text(membuf_t* buf, const char* str, unsigned int len);
+unsigned int membuf_append_text_zero(membuf_t* buf, const char* str, unsigned int len);
 
 static void* membuf_get_data(membuf_t* buf) { return (buf->size == 0 ? NULL : buf->data); }
 static unsigned int membuf_get_size(membuf_t* buf) { return buf->size; }
-static unsigned int membuf_empty(membuf_t* buf) { buf->size = 0; }
 static unsigned int membuf_is_empty(membuf_t* buf) { return buf->size > 0; }
+static unsigned int membuf_empty(membuf_t* buf) { buf->size = 0; }
 
 void membuf_ensure_new_size(membuf_t* buf, unsigned int new_size);
 void membuf_exchange(membuf_t* buf1, membuf_t* buf2);
-
+void* membuf_detach(membuf_t* buf, unsigned int* psize); // need free() result if not NULL
 
 #if defined(_MSC_VER)
-	#define MEMBUF_INLINE _inline
+	#define MEMBUF_INLINE static _inline
 #else
 	#define MEMBUF_INLINE static inline
 #endif
@@ -53,7 +55,7 @@ MEMBUF_INLINE unsigned int membuf_append_uint(membuf_t* buf, unsigned int ui) {
 MEMBUF_INLINE unsigned int membuf_append_short(membuf_t* buf, short s) {
 	return membuf_append_data(buf, &s, sizeof(s));
 }
-MEMBUF_INLINE unsigned int membuf_append_ushort(membuf_t* buf, short us) {
+MEMBUF_INLINE unsigned int membuf_append_ushort(membuf_t* buf, unsigned short us) {
 	return membuf_append_data(buf, &us, sizeof(us));
 }
 MEMBUF_INLINE unsigned int membuf_append_float(membuf_t* buf, float f) {
@@ -62,6 +64,8 @@ MEMBUF_INLINE unsigned int membuf_append_float(membuf_t* buf, float f) {
 MEMBUF_INLINE unsigned int membuf_append_double(membuf_t* buf, double d) {
 	return membuf_append_data(buf, &d, sizeof(d));
 }
-
+MEMBUF_INLINE unsigned int membuf_append_ptr(membuf_t* buf, void* ptr) {
+	return membuf_append_data(buf, &ptr, sizeof(ptr));
+}
 
 #endif //__MEMBUF_H__
