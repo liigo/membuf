@@ -1,7 +1,7 @@
 #ifndef __MEMBUF_H__
 #define __MEMBUF_H__
 
-// `membuf` is an auto-growable continuous in-memory buffer.
+// `membuf_t` is an auto-growable continuous in-memory buffer.
 // It also support "local buffer" to use stack memory efficiently.
 // by liigo, 2013-7-5, 2014-8-16, 2014-10-21.
 // https://github.com/liigo/membuf
