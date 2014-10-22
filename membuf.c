@@ -104,7 +104,7 @@ MEMBUF_INLINE void swap_buffer_size(membuf_t* buf1, membuf_t* buf2) {
 	buf1->buffer_size = buf2->buffer_size; buf2->buffer_size = tmp_buffer_size;
 }
 
-void membuf_exchange_data(membuf_t* buf1, membuf_t* buf2) {
+void membuf_exchange(membuf_t* buf1, membuf_t* buf2) {
 	assert(buf1 && buf2);
 
 	//exchange data
@@ -128,7 +128,7 @@ void membuf_exchange_data(membuf_t* buf1, membuf_t* buf2) {
 					memcpy(buf1->data, tmp_data, buf2->size);
 					swap_size(buf1, buf2);
 				} else {
-					membuf_exchange_data(buf2, buf1); //goto #1.1
+					membuf_exchange(buf2, buf1); //goto #1.1
 				}
 				return;
 			} else if(buf1->buffer_size < buf2->size && buf2->buffer_size < buf1->size) {
@@ -153,7 +153,7 @@ void membuf_exchange_data(membuf_t* buf1, membuf_t* buf2) {
 					memcpy(buf2->data, buf1_local, buf1->size);
 					swap_size(buf1, buf2);
 				} else {
-					membuf_exchange_data(buf2, buf1); //goto #1.3
+					membuf_exchange(buf2, buf1); //goto #1.3
 				}
 				return;
 			}
@@ -173,7 +173,7 @@ void membuf_exchange_data(membuf_t* buf1, membuf_t* buf2) {
 	} else {
 		if(buf2->uses_local_buffer) {
 			//buf2 uses local buffer, buf1 not
-			membuf_exchange_data(buf2, buf1); //goto #2
+			membuf_exchange(buf2, buf1); //goto #2
 			return;
 		}
 	}

@@ -57,14 +57,26 @@ static void simple() {
 }
 
 static void append() {
-	membuf_t buf;
+	membuf_t buf, buf2;
 	membuf_init(&buf, 0);
+    assert_equal_ptr(buf.data, NULL, "init NULL data");
 	membuf_append_byte(&buf, 'a');
 	membuf_append_text(&buf, "bcd", 3);
 	membuf_append_text(&buf, "1234567890ABC", -1);
 	membuf_append_byte(&buf, 0);
 	assert_equal_str(buf.data, "abcd1234567890ABC", "append1");
 	membuf_uninit(&buf);
+
+    membuf_init(&buf2, 8);
+    assert_equal_int(buf2.buffer_size, 8, "init initial buffer size");
+    assert_not_equal_ptr(buf2.data, NULL, "init initial buffer");
+    assert_equal_int(buf2.size, 0, "init initial data size");
+    membuf_append_text(&buf2, "12345678000", 8);
+    assert_equal_int(buf2.buffer_size, 8, "buffer unchanged");
+    membuf_append_byte(&buf2, 0);
+    assert_equal_int(buf2.buffer_size, 16, "buffer changed");
+    assert_equal_int(buf2.size, 9, "data changed");
+    assert_equal_str(buf2.data, "12345678", "expect new data");
 }
 
 static void stack() {
