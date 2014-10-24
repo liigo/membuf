@@ -8,6 +8,6 @@ membuf
     membuf_append_text(&buf, "0123456789", 10); // uses stack buffer
     membuf_append_text(&buf, "ABCDEF", 6); // still uses stack buffer
     membuf_append_zeros(&buf, 1); // now it uses heap buffer
-    printf("%s\n", buf.data);
+    printf("%s\n", buf.data); // will prints "0123456789ABCDEF"
     membuf_uninit(&buf);
 

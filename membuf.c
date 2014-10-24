@@ -70,6 +70,7 @@ unsigned int membuf_append_text_zero(membuf_t* buf, const char* str, unsigned in
 	unsigned int offset;
 	if(str && (len == (unsigned int)(-1)))
 		len = strlen(str);
+    membuf_ensure_new_size(buf, len + 1);
 	offset = membuf_append_data(buf, (void*)str, len);
 	membuf_append_zeros(buf, 1);
 	return offset;
@@ -104,10 +105,12 @@ MEMBUF_INLINE void swap_buffer_size(membuf_t* buf1, membuf_t* buf2) {
 	buf1->buffer_size = buf2->buffer_size; buf2->buffer_size = tmp_buffer_size;
 }
 
+// exchange data and non-loacl buffer
 void membuf_exchange(membuf_t* buf1, membuf_t* buf2) {
 	assert(buf1 && buf2);
 
-	//exchange data
+    // #0
+	// both not use local buffer
 	if(buf1->uses_local_buffer == 0 && buf2->uses_local_buffer == 0) {
 		swap_data(buf1, buf2);
 		swap_size(buf1, buf2);
@@ -117,8 +120,8 @@ void membuf_exchange(membuf_t* buf1, membuf_t* buf2) {
 
 	if(buf1->uses_local_buffer) {
 		if(buf2->uses_local_buffer) {
-			//both use local buffer
 			// #1
+			// both use local buffer
 			if(buf1->buffer_size >= buf2->size && buf2->buffer_size >= buf1->size) {
 				if(buf1->size >= buf2->size) {
 					// #1.1
@@ -159,7 +162,7 @@ void membuf_exchange(membuf_t* buf1, membuf_t* buf2) {
 			}
 		} else {
 			// #2 
-			//buf1 uses local buffer, buf2 not
+			// buf1 uses local buffer, buf2 not
 			unsigned char* buf1_data = buf1->data;
             buf1->uses_local_buffer = 0;
             buf1->data = buf2->data;
@@ -172,7 +175,7 @@ void membuf_exchange(membuf_t* buf1, membuf_t* buf2) {
 		}
 	} else {
 		if(buf2->uses_local_buffer) {
-			//buf2 uses local buffer, buf1 not
+			// buf2 uses local buffer, buf1 not
 			membuf_exchange(buf2, buf1); //goto #2
 			return;
 		}
