@@ -122,60 +122,21 @@ static void stack() {
 	membuf_uninit(&buf);
 }
 
-static void exchange() {
-    // exchange bufs both on heap 
-    {
-        membuf_t buf1, buf2, buf3;
-        membuf_init(&buf1, 0); membuf_append_text(&buf1, "123", 4);
-        membuf_init(&buf2, 8); membuf_append_text(&buf2, "abcde", 6);
-        membuf_exchange(&buf1, &buf2);
-        assert_membuf(&buf1, "abcde", 6, 8, "exchange both on heap 1");
-        assert_membuf(&buf2, "123", 4, 4, "exchange both on heap 1");
-        membuf_exchange(&buf1, &buf2); // exchange back
-        assert_membuf(&buf1, "123", 4, 4, "exchange both on heap 2");
-        assert_membuf(&buf2, "abcde", 6, 8, "exchange both on heap 2");
-        membuf_init(&buf3, 0); // no buffer allocated
-        membuf_exchange(&buf2, &buf3);
-        assert_membuf(&buf3, "abcde", 6, 8, "exchange both on heap 3");
-        assert_equal_int(buf2.size, 0, "exchange both on heap 3");
-        membuf_uninit(&buf1); membuf_uninit(&buf2); membuf_uninit(&buf3);
-    }
-    
-    // exchange bufs both on stack
-    {
-        char data1[8]; char data2[32];
-        membuf_t buf1, buf2, buf3;
-        membuf_init_local(&buf1, data1, 8); membuf_append_text_zero(&buf1, "abc", 3);
-        membuf_init_local(&buf2, data2, 32); membuf_append_text_zero(&buf2, "1", 1);
-        membuf_exchange(&buf1, &buf2);
-        assert_membuf(&buf1, "1", 2, 8, "exchange both on stack 1");
-        assert_membuf(&buf2, "abc", 4, 32, "exchange both on stack 1");
-        membuf_init_local(&buf3, data2, 32); membuf_append_text_zero(&buf3, "1234567890", -1);
-        membuf_exchange(&buf1, &buf3);
-        assert_membuf(&buf1, "1234567890", 11, 11, "exchange both on stack 2"); // now it use heap buffer
-        assert_membuf(&buf3, "1", 2, 32, "exchange both on stack 2");
-        membuf_uninit(&buf1); membuf_uninit(&buf2); membuf_uninit(&buf3);
-    }
-
-    // exchange bufs one on stack and one on heap
-    {
-        char data1[8];
-        membuf_t buf1, buf2;
-        membuf_init_local(&buf1, data1, 8); membuf_append_text_zero(&buf1, "abc", -1);
-        membuf_init(&buf2, 0); membuf_append_text_zero(&buf2, "12345", -1);
-        membuf_exchange(&buf1, &buf2);
-        assert_membuf(&buf1, "12345", 6, 6, "exchange bufs one on stack and one on heap 1");
-        assert_membuf(&buf2, "abc", 4, 4, "exchange bufs one on stack and one on heap 1");
-        assert_equal_int(buf1.uses_local_buffer, 0, "buf1 uses buf2' buffer");
-        membuf_exchange(&buf1, &buf2); // exchange back
-        assert_membuf(&buf1, "abc", 4, 4, "exchange bufs one on stack and one on heap 2");
-        assert_membuf(&buf2, "12345", 6, 6, "exchange bufs one on stack and one on heap 2");
-        buf2.size = 0; membuf_append_text_zero(&buf2, "123456789", -1);
-        membuf_exchange(&buf1, &buf2);
-        assert_membuf(&buf1, "123456789", 10, 12, "exchange bufs one on stack and one on heap 3");
-        assert_membuf(&buf2, "abc", 4, 4, "exchange bufs one on stack and one on heap 3");
-        membuf_uninit(&buf1); membuf_uninit(&buf2);
-    }
+static void init_from_other() {
+	membuf_t buf1, buf2, buf3; char stack_buf[8]; unsigned char* buf2data;
+	membuf_init_local(&buf1, stack_buf, sizeof(stack_buf));
+	membuf_append_text_zero(&buf1, "1234567", -1);
+	membuf_init_from_other(&buf2, &buf1);
+	assert_equal_str(buf2.data, "1234567", "buf2 is init from buf1");
+	assert_equal_int(buf2.size, 8, "buf2 is init from buf1");
+	assert_equal_int(buf2.uses_local_buffer, 0, "buf2 always not uses other's local buffer");
+	assert_equal_ptr(buf1.data, NULL, "buf1 is hollowed by buf2");
+	buf2data = buf2.data;
+	membuf_init_from_other(&buf3, &buf2);
+	assert_equal_ptr(buf3.data, buf2data, "buf3 use buf2's data directly");
+	assert_equal_int(buf3.size, 8, "buf3 is init from buf2");
+	assert_equal_ptr(buf2.data, NULL, "buf2 is hollowed by buf3");
+	membuf_uninit(&buf3);
 }
 
 int main() {
@@ -183,6 +144,6 @@ int main() {
 	simple();
 	append();
 	stack();
-	exchange();
+	init_from_other();
 	return 0;
 }

@@ -5,6 +5,9 @@
 #include <limits.h>
 #include <assert.h>
 
+// https://github.com/liigo/membuf
+// by Liigo.
+
 void membuf_init(membuf_t* buf, unsigned int initial_buffer_size) {
 	memset(buf, 0, sizeof(membuf_t));
 	buf->data = initial_buffer_size > 0 ? (unsigned char*) malloc(initial_buffer_size) : NULL;
@@ -19,9 +22,21 @@ void membuf_init_local(membuf_t* buf, void* local_buffer, unsigned int local_buf
 	buf->uses_local_buffer = 1;
 }
 
+void membuf_init_from_other(membuf_t* buf, membuf_t* other) {
+    if(other->uses_local_buffer) {
+        membuf_init(buf, 0);
+        if(other->size > 0)
+			membuf_append_data(buf, other->data, other->size);
+    } else {
+        *buf = *other;
+    }
+    memset(other, 0, sizeof(membuf_t)); // other is hollowed now
+}
+
 void membuf_uninit(membuf_t* buf) {
 	if(!buf->uses_local_buffer && buf->data)
 		free(buf->data);
+    memset(buf, 0, sizeof(membuf_t));
 }
 
 void membuf_ensure_new_size(membuf_t* buf, unsigned int new_size) {
@@ -103,81 +118,4 @@ MEMBUF_INLINE void swap_size(membuf_t* buf1, membuf_t* buf2) {
 MEMBUF_INLINE void swap_buffer_size(membuf_t* buf1, membuf_t* buf2) {
 	unsigned int tmp_buffer_size = buf1->buffer_size;
 	buf1->buffer_size = buf2->buffer_size; buf2->buffer_size = tmp_buffer_size;
-}
-
-// exchange data and non-loacl buffer
-void membuf_exchange(membuf_t* buf1, membuf_t* buf2) {
-	assert(buf1 && buf2);
-
-    // #0
-	// both not use local buffer
-	if(buf1->uses_local_buffer == 0 && buf2->uses_local_buffer == 0) {
-		swap_data(buf1, buf2);
-		swap_size(buf1, buf2);
-		swap_buffer_size(buf1, buf2);
-		return;
-	}
-
-	if(buf1->uses_local_buffer) {
-		if(buf2->uses_local_buffer) {
-			// #1
-			// both use local buffer
-			if(buf1->buffer_size >= buf2->size && buf2->buffer_size >= buf1->size) {
-				if(buf1->size >= buf2->size) {
-					// #1.1
-					unsigned char tmp_data[USHRT_MAX]; // uses const-sized array for compatibility
-					memcpy(tmp_data, buf2->data, buf2->size); // buf2->size is smaller than buf1->size
-					memcpy(buf2->data, buf1->data, buf1->size);
-					memcpy(buf1->data, tmp_data, buf2->size);
-					swap_size(buf1, buf2);
-				} else {
-					membuf_exchange(buf2, buf1); //goto #1.1
-				}
-				return;
-			} else if(buf1->buffer_size < buf2->size && buf2->buffer_size < buf1->size) {
-				// #1.2
-				buf1->uses_local_buffer = buf2->uses_local_buffer = 0;
-				buf1->data = (unsigned char*) malloc(buf2->size);
-				memcpy(buf1->data, buf2->data, buf2->size);
-				buf1->buffer_size = buf2->size;
-				buf2->data = (unsigned char*) malloc(buf1->size);
-				memcpy(buf2->data, buf1->data, buf1->size);
-				buf2->buffer_size = buf1->size;
-				swap_size(buf1, buf2);
-				return;
-			} else {
-				if(buf1->buffer_size < buf2->size) {
-					// #1.3
-                    void* buf1_local = buf1->data;
-					buf1->uses_local_buffer = 0;
-					buf1->data = (unsigned char*) malloc(buf2->size);
-					memcpy(buf1->data, buf2->data, buf2->size);
-					buf1->buffer_size = buf2->size;
-					memcpy(buf2->data, buf1_local, buf1->size);
-					swap_size(buf1, buf2);
-				} else {
-					membuf_exchange(buf2, buf1); //goto #1.3
-				}
-				return;
-			}
-		} else {
-			// #2 
-			// buf1 uses local buffer, buf2 not
-			unsigned char* buf1_data = buf1->data;
-            buf1->uses_local_buffer = 0;
-            buf1->data = buf2->data;
-            buf1->buffer_size = buf2->buffer_size;
-            buf2->data = (unsigned char*) malloc(buf1->size);
-            memcpy(buf2->data, buf1_data, buf1->size);
-            buf2->buffer_size = buf1->size;
-			swap_size(buf1, buf2);
-			return;
-		}
-	} else {
-		if(buf2->uses_local_buffer) {
-			// buf2 uses local buffer, buf1 not
-			membuf_exchange(buf2, buf1); //goto #2
-			return;
-		}
-	}
 }

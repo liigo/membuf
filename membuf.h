@@ -3,8 +3,8 @@
 
 // `membuf_t` is a growable continuous in-memory buffer.
 // It also support "local buffer" to use stack memory efficiently.
-// by liigo, 2013-7-5, 2014-8-16, 2014-10-21.
 // https://github.com/liigo/membuf
+// by Liigo, 2013-7-5, 2014-8-16, 2014-10-21, 2014-11-18.
 
 #include <stdlib.h>
 
@@ -21,6 +21,7 @@ typedef struct {
 
 void membuf_init(membuf_t* buf, unsigned int initial_buffer_size);
 void membuf_init_local(membuf_t* buf, void* local_buffer, unsigned int local_buffer_size);
+void membuf_init_from_other(membuf_t* buf, membuf_t* other); // don't use other any more
 void membuf_uninit(membuf_t* buf);
 
 unsigned int membuf_append_data(membuf_t* buf, void* data, unsigned int size);
@@ -34,7 +35,6 @@ static unsigned int membuf_is_empty(membuf_t* buf) { return buf->size > 0; }
 static unsigned int membuf_empty(membuf_t* buf) { buf->size = 0; }
 
 void membuf_ensure_new_size(membuf_t* buf, unsigned int new_size);
-void membuf_exchange(membuf_t* buf1, membuf_t* buf2);
 void* membuf_detach(membuf_t* buf, unsigned int* psize); // need free() result if not NULL
 
 #if defined(_MSC_VER)
