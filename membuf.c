@@ -22,7 +22,7 @@ void membuf_init_local(membuf_t* buf, void* local_buffer, unsigned int local_buf
 	buf->uses_local_buffer = 1;
 }
 
-void membuf_init_from_other(membuf_t* buf, membuf_t* other) {
+void membuf_init_move_from(membuf_t* buf, membuf_t* other) {
     if(other->uses_local_buffer) {
         membuf_init(buf, 0);
         if(other->size > 0)

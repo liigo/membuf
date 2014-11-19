@@ -126,13 +126,13 @@ static void init_from_other() {
 	membuf_t buf1, buf2, buf3; char stack_buf[8]; unsigned char* buf2data;
 	membuf_init_local(&buf1, stack_buf, sizeof(stack_buf));
 	membuf_append_text_zero(&buf1, "1234567", -1);
-	membuf_init_from_other(&buf2, &buf1);
+	membuf_init_move_from(&buf2, &buf1);
 	assert_equal_str(buf2.data, "1234567", "buf2 is init from buf1");
 	assert_equal_int(buf2.size, 8, "buf2 is init from buf1");
 	assert_equal_int(buf2.uses_local_buffer, 0, "buf2 always not uses other's local buffer");
 	assert_equal_ptr(buf1.data, NULL, "buf1 is hollowed by buf2");
 	buf2data = buf2.data;
-	membuf_init_from_other(&buf3, &buf2);
+	membuf_init_move_from(&buf3, &buf2);
 	assert_equal_ptr(buf3.data, buf2data, "buf3 use buf2's data directly");
 	assert_equal_int(buf3.size, 8, "buf3 is init from buf2");
 	assert_equal_ptr(buf2.data, NULL, "buf2 is hollowed by buf3");

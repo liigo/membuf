@@ -21,7 +21,7 @@ typedef struct {
 
 void membuf_init(membuf_t* buf, unsigned int initial_buffer_size);
 void membuf_init_local(membuf_t* buf, void* local_buffer, unsigned int local_buffer_size);
-void membuf_init_from_other(membuf_t* buf, membuf_t* other); // don't use other any more
+void membuf_init_move_from(membuf_t* buf, membuf_t* other); // don't use other anymore
 void membuf_uninit(membuf_t* buf);
 
 unsigned int membuf_append_data(membuf_t* buf, void* data, unsigned int size);
