@@ -32,9 +32,9 @@ unsigned int membuf_append_text_zero(membuf_t* buf, const char* str, unsigned in
 static void* membuf_get_data(membuf_t* buf) { return (buf->size == 0 ? NULL : buf->data); }
 static unsigned int membuf_get_size(membuf_t* buf) { return buf->size; }
 static unsigned int membuf_is_empty(membuf_t* buf) { return buf->size > 0; }
-static unsigned int membuf_empty(membuf_t* buf) { buf->size = 0; }
+static void membuf_empty(membuf_t* buf) { buf->size = 0; }
 
-void membuf_ensure_new_size(membuf_t* buf, unsigned int new_size);
+void membuf_reserve(membuf_t* buf, unsigned int extra_size);
 void* membuf_detach(membuf_t* buf, unsigned int* psize); // need free() result if not NULL
 
 #if defined(_MSC_VER)

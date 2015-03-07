@@ -39,11 +39,11 @@ void membuf_uninit(membuf_t* buf) {
     memset(buf, 0, sizeof(membuf_t));
 }
 
-void membuf_ensure_new_size(membuf_t* buf, unsigned int new_size) {
-	if(new_size > buf->buffer_size - buf->size) {
+void membuf_reserve(membuf_t* buf, unsigned int extra_size) {
+	if(extra_size > buf->buffer_size - buf->size) {
 		//calculate new buffer size
-		unsigned int new_buffer_size = buf->buffer_size == 0 ? new_size : buf->buffer_size << 1;
-		unsigned int new_data_size = buf->size + new_size;
+		unsigned int new_buffer_size = buf->buffer_size == 0 ? extra_size : buf->buffer_size << 1;
+		unsigned int new_data_size = buf->size + extra_size;
 		while(new_buffer_size < new_data_size)
 			new_buffer_size <<= 1;
 
@@ -62,14 +62,14 @@ void membuf_ensure_new_size(membuf_t* buf, unsigned int new_size) {
 
 unsigned int membuf_append_data(membuf_t* buf, void* data, unsigned int size) {
 	assert(data && size > 0);
-	membuf_ensure_new_size(buf, size);
+	membuf_reserve(buf, size);
 	memmove(buf->data + buf->size, data, size);
 	buf->size += size;
 	return (buf->size - size);
 }
 
 unsigned int membuf_append_zeros(membuf_t* buf, unsigned int size) {
-	membuf_ensure_new_size(buf, size);
+	membuf_reserve(buf, size);
 	memset(buf->data + buf->size, 0, size);
 	buf->size += size;
 	return (buf->size - size);
@@ -85,7 +85,7 @@ unsigned int membuf_append_text_zero(membuf_t* buf, const char* str, unsigned in
 	unsigned int offset;
 	if(str && (len == (unsigned int)(-1)))
 		len = strlen(str);
-    membuf_ensure_new_size(buf, len + 1);
+    membuf_reserve(buf, len + 1);
 	offset = membuf_append_data(buf, (void*)str, len);
 	membuf_append_zeros(buf, 1);
 	return offset;
