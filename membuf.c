@@ -109,16 +109,18 @@ void membuf_remove(membuf_t* buf, unsigned int offset, unsigned int size) {
 	}
 }
 
+void* membuf_offset(membuf_t* buf, unsigned int offset) {
+	assert(offset < buf->size);
+	return (buf->size == 0) ? NULL : buf->data + offset;
+}
+
 void* membuf_detach(membuf_t* buf, unsigned int* psize) {
 	void* result = buf->data;
 	if(psize) *psize = buf->size;
-	if(buf->uses_local_buffer) {
-		result = buf->size > 0 ? malloc(buf->size) : NULL;
+	if(buf->uses_local_buffer && buf->size > 0) {
+		result = malloc(buf->size);
 		memcpy(result, buf->data, buf->size);
-	} else {
-		buf->buffer_size = 0;
 	}
-	buf->data = NULL;
-	buf->size = 0;
+	memset(buf, 0, sizeof(membuf_t));
 	return result;
 }
