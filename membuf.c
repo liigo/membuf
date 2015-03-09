@@ -91,6 +91,24 @@ unsigned int membuf_append_text_zero(membuf_t* buf, const char* str, unsigned in
 	return offset;
 }
 
+void membuf_insert(membuf_t* buf, unsigned int offset, void* data, unsigned int size) {
+	assert(offset < buf->size);
+	membuf_reserve(buf, size);
+	memcpy(buf->data + offset + size, buf->data + offset, buf->size - offset);
+	memcpy(buf->data + offset, data, size);
+	buf->size += size;
+}
+
+void membuf_remove(membuf_t* buf, unsigned int offset, unsigned int size) {
+	assert(offset < buf->size);
+	if (offset + size >= buf->size) {
+		buf->size = offset;
+	} else {
+		memmove(buf->data + offset, buf->data + offset + size, buf->size - offset - size);
+		buf->size -= size;
+	}
+}
+
 void* membuf_detach(membuf_t* buf, unsigned int* psize) {
 	void* result = buf->data;
 	if(psize) *psize = buf->size;
@@ -103,19 +121,4 @@ void* membuf_detach(membuf_t* buf, unsigned int* psize) {
 	buf->data = NULL;
 	buf->size = 0;
 	return result;
-}
-
-MEMBUF_INLINE void swap_data(membuf_t* buf1, membuf_t* buf2) {
-	unsigned char* tmp_data = buf1->data;
-	buf1->data = buf2->data; buf2->data = tmp_data;
-}
-
-MEMBUF_INLINE void swap_size(membuf_t* buf1, membuf_t* buf2) {
-	unsigned int tmp_size = buf1->size;
-	buf1->size = buf2->size; buf2->size = tmp_size;
-}
-
-MEMBUF_INLINE void swap_buffer_size(membuf_t* buf1, membuf_t* buf2) {
-	unsigned int tmp_buffer_size = buf1->buffer_size;
-	buf1->buffer_size = buf2->buffer_size; buf2->buffer_size = tmp_buffer_size;
 }

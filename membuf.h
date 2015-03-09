@@ -4,7 +4,11 @@
 // `membuf_t` is a growable continuous in-memory buffer.
 // It also support "local buffer" to use stack memory efficiently.
 // https://github.com/liigo/membuf
-// by Liigo, 2013-7-5, 2014-8-16, 2014-10-21, 2014-11-18.
+// by Liigo, 2013-7-5, 2014-8-16, 2014-10-21, 2014-11-18, 2015-3-7.
+
+#ifdef __cplusplus
+extern "C"	{
+#endif
 
 #include <stdlib.h>
 
@@ -33,6 +37,10 @@ static void* membuf_get_data(membuf_t* buf) { return (buf->size == 0 ? NULL : bu
 static unsigned int membuf_get_size(membuf_t* buf) { return buf->size; }
 static unsigned int membuf_is_empty(membuf_t* buf) { return buf->size > 0; }
 static void membuf_empty(membuf_t* buf) { buf->size = 0; }
+static void* membuf_offset(membuf_t* buf, unsigned int offset) { return (buf->size == 0) ? NULL : buf->data + offset; }
+
+void membuf_insert(membuf_t* buf, unsigned int offset, void* data, unsigned int size);
+void membuf_remove(membuf_t* buf, unsigned int offset, unsigned int size);
 
 void membuf_reserve(membuf_t* buf, unsigned int extra_size);
 void* membuf_detach(membuf_t* buf, unsigned int* psize); // need free() result if not NULL
@@ -67,5 +75,9 @@ MEMBUF_INLINE unsigned int membuf_append_double(membuf_t* buf, double d) {
 MEMBUF_INLINE unsigned int membuf_append_ptr(membuf_t* buf, void* ptr) {
 	return membuf_append_data(buf, &ptr, sizeof(ptr));
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__MEMBUF_H__
