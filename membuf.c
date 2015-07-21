@@ -1,5 +1,6 @@
 #include "membuf.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <memory.h>
 #include <string.h>
 #include <limits.h>
@@ -123,4 +124,53 @@ void* membuf_detach(membuf_t* buf, unsigned int* psize) {
 	}
 	memset(buf, 0, sizeof(membuf_t));
 	return result;
+}
+
+unsigned int membuf_save_to_file(membuf_t* buf, const char* file, const void* bom, unsigned int bomlen) {
+	FILE* pfile = fopen(file, "wb+");
+	if (pfile) {
+		unsigned int bytes = 0;
+		if (bom)
+			bytes += fwrite(bom, 1, bomlen, pfile);
+		if (buf->size > 0)
+			bytes += fwrite(buf->data, 1, buf->size, pfile);
+		fclose(pfile);
+		return bytes;
+	}
+	return -1;
+}
+
+unsigned int membuf_append_to_file(membuf_t* buf, const char* file) {
+	FILE* pfile = fopen(file, "ab+");
+	if (pfile) {
+		unsigned int bytes = fwrite(buf->data, 1, buf->size, pfile);
+		fclose(pfile);
+		return bytes;
+	}
+	return -1;
+}
+
+unsigned int membuf_load_from_file(membuf_t* buf, const char* file, int append_zero_char) {
+	if (file == NULL) return 0;
+	FILE* pfile = fopen(file, "rb");
+	if (pfile) {
+		unsigned int read_bytes = 0;
+		long filelen;
+		fseek(pfile, 0, SEEK_END);
+		filelen = ftell(pfile);
+		fseek(pfile, 0, SEEK_SET);
+		if (filelen > 0) {
+			membuf_reserve(buf, filelen);
+			read_bytes = fread(membuf_offset_uncheck(buf, buf->size), 1, filelen, pfile);
+			assert(read_bytes == filelen);
+			buf->size += read_bytes;
+		}
+		if (append_zero_char) {
+			membuf_append_zeros(buf, 1);
+			read_bytes++;
+		}
+		fclose(pfile);
+		return read_bytes;
+	}
+	return -1;
 }

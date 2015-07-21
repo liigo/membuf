@@ -4,7 +4,7 @@
 // `membuf_t` is a growable continuous in-memory buffer.
 // It also support "local buffer" to use stack memory efficiently.
 // https://github.com/liigo/membuf
-// by Liigo, 2013-7-5, 2014-8-16, 2014-10-21, 2014-11-18, 2015-3-7.
+// by Liigo, 2013-7-5, 2014-8-16, 2014-10-21, 2014-11-18, 2015-3-7, 2015-7-21.
 
 #ifdef __cplusplus
 extern "C"	{
@@ -28,6 +28,7 @@ void membuf_init_local(membuf_t* buf, void* local_buffer, unsigned int local_buf
 void membuf_init_move_from(membuf_t* buf, membuf_t* other); // don't use other anymore
 void membuf_uninit(membuf_t* buf);
 
+// returns the offset of the new added data
 unsigned int membuf_append_data(membuf_t* buf, void* data, unsigned int size);
 unsigned int membuf_append_zeros(membuf_t* buf, unsigned int size);
 unsigned int membuf_append_text(membuf_t* buf, const char* str, unsigned int len);
@@ -43,6 +44,7 @@ void membuf_remove(membuf_t* buf, unsigned int offset, unsigned int size);
 
 void membuf_reserve(membuf_t* buf, unsigned int extra_size);
 void* membuf_offset(membuf_t* buf, unsigned int offset);
+static void* membuf_offset_uncheck(membuf_t* buf, unsigned int offset) { return buf->data + offset; }
 void* membuf_detach(membuf_t* buf, unsigned int* psize); // need free() result if not NULL
 
 #if defined(_MSC_VER)
@@ -75,6 +77,13 @@ MEMBUF_INLINE unsigned int membuf_append_double(membuf_t* buf, double d) {
 MEMBUF_INLINE unsigned int membuf_append_ptr(membuf_t* buf, void* ptr) {
 	return membuf_append_data(buf, &ptr, sizeof(ptr));
 }
+
+// save membuf's data to file, returns data length in bytes written to file, or -1 if fails.
+unsigned int membuf_save_to_file(membuf_t* buf, const char* file, const void* bom, unsigned int bomlen);
+// append membuf's data to the end of file, returns data length in bytes written to file, or -1 if fails.
+unsigned int membuf_append_to_file(membuf_t* buf, const char* file);
+// load file's content and append to membuf, returns length in bytes of new added data, or -1 if fails.
+unsigned int membuf_load_from_file(membuf_t* buf, const char* file, int append_zero_char);
 
 #ifdef __cplusplus
 } // extern "C"
