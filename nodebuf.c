@@ -3,48 +3,40 @@
 #include <memory.h>
 #include <assert.h>
 
-static size_t *count_addr(struct nodebuf_t *buf) {
-    return (size_t *) (buf->data + buf->bytes - sizeof(size_t));
-}
-
-static void **first_ptr_addr(struct nodebuf_t *buf) {
-    size_t *count = count_addr(buf);
-    return (void**)count - *count;
-}
-
 void nodebuf_init(struct nodebuf_t *buf,
-                  void *data, size_t bytes, size_t node_bytes)
+                  void *data, size_t bytes, uint16_t node_bytes)
 {
-    int i;
     buf->data = (unsigned char*) data;
-    buf->bytes = bytes;
     buf->node_bytes = node_bytes;
 
     // the data's memory layout:
     // __________________________________________________
-    // | node1 node2 ... nodeN | ptr1 ptr2 ... ptrN | N |
-    // | first_node            | first_ptr          |   |
-    // by liigo 20200214.
-    //
-    assert(bytes >= sizeof(size_t));
+    // | node1 node2 ... nodeN | N | idxN ... idx2 idx1 |
+    // | first_node            pn  |          first_idx |
     // N: the node count
-    size_t N = (bytes - sizeof(size_t)) / (node_bytes + sizeof(void*));
-    *count_addr(buf) = N;
-    unsigned char *node = data;
-    void **ptr = first_ptr_addr(buf);
-    for (i = 0; i < N; i++) {
-        *(ptr + i) = node;
-        node += node_bytes;
+    // by liigo 20200214, 20210702 redesigned.
+    
+    if (node_bytes == 0) {
+        fprintf(stderr, "nodebuf_init error: node_bytes cannot be zero!\n");
+        abort();
+    }
+    if (bytes < sizeof(uint16_t) + sizeof(uint16_t) + node_bytes) {
+        fprintf(stderr, "nodebuf_init error: the buffer data is too small!\n");
+        abort();
     }
 
-    // just for test
-    /*
-    printf("nodebuf_init: data=%p bytes=%d node_bytes=%d node_count=%d\n",
-           data, bytes, node_bytes, N);
-    for(i = 0; i < N; i++) {
-        printf("  %d %p\n", i, *(ptr + i));
+    int N = (bytes - sizeof(uint16_t)) / (node_bytes + sizeof(uint16_t));
+    if (N > UINT16_MAX) {
+        fprintf(stderr, "nodebuf_init error: too many node count (%d) to manage!\n", N);
+        abort();
     }
-    */
+
+    buf->pn = (uint16_t*) (buf->data + N * node_bytes);
+    buf->pn[0] = N;
+    uint16_t *pi = buf->pn + N;
+    for (int i = 0; i < N; i++) {
+        *pi-- = i;
+    }
 }
 
 void nodebuf_fini(struct nodebuf_t *buf, void (*free_fn)(void*)) {
@@ -53,36 +45,37 @@ void nodebuf_fini(struct nodebuf_t *buf, void (*free_fn)(void*)) {
     memset(buf, 0, sizeof(*buf));
 }
 
-size_t nodebuf_count(struct nodebuf_t *buf) {
-    return *count_addr(buf);
+int nodebuf_count(struct nodebuf_t *buf) {
+    return buf->pn[0];
 }
 
 void* nodebuf_malloc(struct nodebuf_t *buf, int zeromem) {
     void *p;
-    size_t *count = count_addr(buf);
-    if (*count > 0) {
-        p = *first_ptr_addr(buf);
-        (*count)--;
+    uint16_t *pn = buf->pn;
+    int n = *pn;
+    if (n > 0) {
+        p = buf->data + pn[n] * buf->node_bytes;
+        (*pn)--;
     } else {
         p = malloc(buf->node_bytes);
-        printf("nodebuf_malloc: real malloc(%d) call, returns %p\n",
+        printf("nodebuf_malloc: real malloc(%d) returns %p\n",
                buf->node_bytes, p);
     }
 
     if(p && zeromem) {
         memset(p, 0, buf->node_bytes);
     }
-
     return p;
 }
 
 void nodebuf_free(struct nodebuf_t *buf, void *node) {
-    unsigned char *p = node;
-    if (p >= buf->data && p < buf->data + buf->bytes) {
-        (*count_addr(buf))++;
-        *first_ptr_addr(buf) = node;
+    uint8_t *p = (uint8_t*)node;
+    uint16_t *pn = buf->pn;
+    if (p >= buf->data && p < (uint8_t*)pn) {
+        int n = ++(*pn);
+        pn[n] = (p - buf->data) / buf->node_bytes;
     } else {
-        free(node); // TODO: cache it (in buf->malloced) for future use
-        printf("nodebuf_free: real free(%p) call\n", node);
+        free(node);
+        printf("nodebuf_free: real free(%p)\n", node);
     }
 }

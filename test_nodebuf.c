@@ -17,8 +17,9 @@ void* check_malloc(int expect_value) {
 
 int main() {
     void *p1, *p3, *p;
-    int data[] = {100,101,102,103,104, 0,0,0,0,0,0};
+    int data[] = {100,101,102,103,104, 0,0,0};
     nodebuf_init(&buf, data, sizeof(data), sizeof(int));
+    printf("nodebuf_count() = %d\n", nodebuf_count(&buf));
     assert(nodebuf_count(&buf) == 5);
 
     p1 = check_malloc(100);
