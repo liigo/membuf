@@ -17,20 +17,21 @@ void* check_malloc(int expect_value) {
 
 int main() {
     void *p1, *p3, *p;
-    int data[] = {100,101,102,103,104, 0,0,0};
+    int data[] = {100,101,102,103, 0,0};
     nodebuf_init(&buf, data, sizeof(data), sizeof(int));
-    printf("nodebuf_count() = %d\n", nodebuf_count(&buf));
-    assert(nodebuf_count(&buf) == 5);
+    printf("nodebuf_avail() = %d\n", nodebuf_avail(&buf));
+    assert(nodebuf_avail(&buf) == 4);
 
     p1 = check_malloc(100);
     check_malloc(101);
     check_malloc(102);
     p3 = check_malloc(103);
+    assert(nodebuf_avail(&buf) == 0);
     nodebuf_free(&buf, p1);
     check_malloc(100);
     nodebuf_free(&buf, p3);
     check_malloc(103);
-    check_malloc(104);
+    assert(nodebuf_avail(&buf) == 0);
     p = check_malloc(999); // expect a test error here
     nodebuf_free(&buf, p);
 

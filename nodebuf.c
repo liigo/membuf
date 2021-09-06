@@ -10,31 +10,31 @@ void nodebuf_init(struct nodebuf_t *buf,
     buf->node_bytes = node_bytes;
 
     // the data's memory layout:
-    // __________________________________________________
-    // | node1 node2 ... nodeN | N | idxN ... idx2 idx1 |
-    // | first_node            pn  |          first_idx |
+    // ______________________________________________
+    // | node1 node2 ... nodeN | idxN ... idx2 idx1 |
+    // | first_node            | indexes  first_idx |
     // N: the node count
-    // by liigo 20200214, 20210702 redesigned.
+    // by liigo 20200214, 20210906 redesigned.
     
     if (node_bytes == 0) {
         fprintf(stderr, "nodebuf_init error: node_bytes cannot be zero!\n");
         abort();
     }
-    if (bytes < sizeof(uint16_t) + sizeof(uint16_t) + node_bytes) {
+    if (bytes < sizeof(uint16_t) + node_bytes) {
         fprintf(stderr, "nodebuf_init error: the buffer data is too small!\n");
         abort();
     }
 
-    int N = (bytes - sizeof(uint16_t)) / (node_bytes + sizeof(uint16_t));
-    if (N > UINT16_MAX) {
-        fprintf(stderr, "nodebuf_init error: too many node count (%d) to manage!\n", N);
+    int n = bytes / (node_bytes + sizeof(uint16_t));
+    if (n > UINT16_MAX) {
+        fprintf(stderr, "nodebuf_init error: too many node count (%d) to manage!\n", n);
         abort();
     }
 
-    buf->pn = (uint16_t*) (buf->data + N * node_bytes);
-    buf->pn[0] = N;
-    uint16_t *pi = buf->pn + N;
-    for (int i = 0; i < N; i++) {
+    buf->avail = n;
+    buf->indexes = (uint16_t*) (buf->data + n * node_bytes);
+    uint16_t *pi = buf->indexes + n - 1;
+    for (int i = 0; i < n; i++) {
         *pi-- = i;
     }
 }
@@ -45,17 +45,15 @@ void nodebuf_fini(struct nodebuf_t *buf, void (*free_fn)(void*)) {
     memset(buf, 0, sizeof(*buf));
 }
 
-int nodebuf_count(struct nodebuf_t *buf) {
-    return buf->pn[0];
+int nodebuf_avail(struct nodebuf_t *buf) {
+    return buf->avail;
 }
 
 void* nodebuf_malloc(struct nodebuf_t *buf, int zeromem) {
     void *p;
-    uint16_t *pn = buf->pn;
-    int n = *pn;
-    if (n > 0) {
-        p = buf->data + pn[n] * buf->node_bytes;
-        (*pn)--;
+    if (buf->avail > 0) {
+        buf->avail--;
+        p = buf->data + (buf->indexes[buf->avail] * buf->node_bytes);
     } else {
         p = malloc(buf->node_bytes);
         printf("nodebuf_malloc: real malloc(%d) returns %p\n",
@@ -70,10 +68,9 @@ void* nodebuf_malloc(struct nodebuf_t *buf, int zeromem) {
 
 void nodebuf_free(struct nodebuf_t *buf, void *node) {
     uint8_t *p = (uint8_t*)node;
-    uint16_t *pn = buf->pn;
-    if (p >= buf->data && p < (uint8_t*)pn) {
-        int n = ++(*pn);
-        pn[n] = (p - buf->data) / buf->node_bytes;
+    if (p >= buf->data && p < (uint8_t*)buf->indexes) {
+        buf->indexes[buf->avail] = (p - buf->data) / buf->node_bytes;
+        buf->avail++;
     } else {
         free(node);
         printf("nodebuf_free: real free(%p)\n", node);

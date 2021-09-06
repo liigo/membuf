@@ -1,5 +1,5 @@
 # CC = arm-linux-gcc
-CFLAGS = -std=c99 -Wall
+CFLAGS = -std=c99 -Wall -g
 LIBS =
 LDFLAGS +=
 
