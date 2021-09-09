@@ -1,5 +1,5 @@
-#ifndef __MEMBUF_H__
-#define __MEMBUF_H__
+#ifndef ZZ_MEMBUF_H
+#define ZZ_MEMBUF_H
 
 // `membuf_t` is a growable continuous in-memory buffer.
 // It also support "local buffer" to use stack memory efficiently.
@@ -89,4 +89,4 @@ unsigned int membuf_load_from_file(membuf_t* buf, const char* file, int append_z
 } // extern "C"
 #endif
 
-#endif //__MEMBUF_H__
+#endif // ZZ_MEMBUF_H

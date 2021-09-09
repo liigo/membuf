@@ -1,5 +1,5 @@
-#ifndef ZZ_NODE_BUF_HEADER
-#define ZZ_NODE_BUF_HEADER
+#ifndef ZZ_NODEBUF_H
+#define ZZ_NODEBUF_H
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -8,8 +8,8 @@
 struct nodebuf_t {
     uint8_t  *data;
     uint16_t *indexes; // node indexes
-    uint16_t avail;   // node count
-    uint16_t node_bytes; // node size
+    uint16_t avail;    // available node count
+    uint16_t node_bytes; // node size in bytes
 };
 
 #ifdef __cplusplus
@@ -28,4 +28,4 @@ void nodebuf_free(struct nodebuf_t *buf, void *node);
 } // extern "C"
 #endif
 
-#endif // ZZ_NODE_BUF_HEADER
+#endif // ZZ_NODEBUF_H
